@@ -1,9 +1,11 @@
 package com.example.spi;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 
 public interface FileStorage {
-    void saveFile(String fileName, byte[] data);
-    byte[] getFile(String fileName);
+    String saveFile(InputStream inputStream, String filename) throws IOException;
+    InputStream getFile(String fileId) throws IOException;
     List<String> getFileList();
 }

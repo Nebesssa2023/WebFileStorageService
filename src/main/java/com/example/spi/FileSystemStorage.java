@@ -1,38 +1,33 @@
 package com.example.spi;
 
-import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
-public class FileSystemStorage implements FileStorage, FileRestrictions{
-    private final String storagePath;
-    private static final int MAX_FILE_SIZE = 100 * 1024;
-    private static final List<String> SKIPPED_EXTENSIONS = Arrays.asList(".txt", ".csv");
+public class FileSystemStorage implements FileStorage{
+    private static final String STORAGE_DIRECTORY = "C:\\Users\\Zver\\Desktop\\Prompt";
 
-    public FileSystemStorage(String storagePath) {
-        this.storagePath = storagePath;
-    }
-
-    public void saveFile(String fileName, byte[] data) {
+    @Override
+    public String saveFile(InputStream inputStream, String filename) {
+        String fileId = UUID.randomUUID().toString();
+        Path filePath = Paths.get(STORAGE_DIRECTORY, fileId);
         try {
-            if (isFileValid(new File(fileName))) {
-                Files.write(Paths.get(storagePath, fileName), data);
-            } else {
-                System.out.println("The file does not meet the established restrictions!");
-            }
+            Files.copy(inputStream, filePath);
         } catch (IOException e) {
             throw new RuntimeException("Failed to save file", e);
         }
+        return fileId;
     }
 
-    public byte[] getFile(String fileName) {
+    public InputStream getFile(String fileId) {
+        Path filePath = Paths.get(STORAGE_DIRECTORY, fileId);
         try {
-            return Files.readAllBytes(Paths.get(storagePath, fileName));
+            return Files.newInputStream(filePath);
         } catch (IOException e) {
             throw new RuntimeException("Failed to read file", e);
         }
@@ -40,33 +35,12 @@ public class FileSystemStorage implements FileStorage, FileRestrictions{
 
     public List<String> getFileList() {
         try {
-            return Files.list(Paths.get(storagePath))
+            return Files.list(Paths.get(STORAGE_DIRECTORY))
                     .map(Path::getFileName)
                     .map(Path::toString)
                     .collect(Collectors.toList());
         } catch (IOException e) {
             throw new RuntimeException("Failed to list files", e);
         }
-    }
-
-    @Override
-    public boolean isFileValid(File file) {
-        return file.length() <= getMaxFileSize() && !getSkippedExtensions()
-                .contains(getFileExtension(file));    }
-
-    @Override
-    public int getMaxFileSize() {
-        return MAX_FILE_SIZE;
-    }
-
-    @Override
-    public List<String> getSkippedExtensions() {
-        return SKIPPED_EXTENSIONS;
-    }
-
-    private String getFileExtension(File file) {
-        String fileName = file.getName();
-        int dotIndex = fileName.lastIndexOf('.');
-        return (dotIndex == -1) ? "" : fileName.substring(dotIndex);
     }
 }
